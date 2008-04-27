@@ -1,0 +1,20 @@
+Revision history for Perl extension AnyEvent::FastPing
+
+1.0   Sun Apr 27 17:43:24 CEST 2008
+	- rename from Net::FPing to AnyEvent::FastPing.
+
+0.9   Tue May 15 21:24:22 CEST 2007
+	- document net-fping output format.
+        - count iterations from 1 in net-fping.
+        - clarified license.
+
+0.02  Sun May  6 01:16:52 CEST 2007
+        - randomise the magic number used a bit so multiple net-fpings
+          running on the same host do not see each others' replies.
+        - net-fping did not accept its floating-point arguments.
+        - add -h and usage to net-fping.
+        - skip ping tests when !root.
+
+0.01  Fri May  4 02:02:04 CEST 2007
+	- cloned from Convert-Scalar.
+

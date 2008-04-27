@@ -1,0 +1,22 @@
+BEGIN { $> and do { print "1..0 # skipped: will only run ping tests as root\n"; exit } }
+
+print "1..4\n";
+
+use strict;
+
+use AnyEvent;
+use AnyEvent::FastPing;
+
+my $done = AnyEvent->condvar;
+
+print "ok 1\n";
+
+AnyEvent::FastPing::icmp_ping
+   [[v127.0.0.1, v127.0.0.255], [v127.0.1.1, v127.0.1.5, 0.05]], 0, 0,
+   sub { print "ok 3\n"; $done->broadcast };
+
+print "ok 2\n";
+
+$done->wait;
+
+print "ok 4\n";
