@@ -13,7 +13,7 @@ WriteMakefile(
     },
     NAME           => "AnyEvent::FastPing",
     VERSION_FROM   => "FastPing.pm",
-    LIBS           => ["-lpthread"],
+    LIBS           => ["-lpthread -lm"],
     EXE_FILES      => ["bin/fastping"],
 );
 

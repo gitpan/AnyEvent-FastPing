@@ -8,7 +8,7 @@ AnyEvent::FastPing - quickly ping a large number of hosts
 
 =head1 DESCRIPTION
 
-This module was written for a single purpose only: sending ICMP EHCO
+This module was written for a single purpose only: sending ICMP ECHO
 REQUEST packets as quickly as possible to a large number of hosts
 (thousands to millions).
 
@@ -29,7 +29,7 @@ no warnings;
 use AnyEvent;
 
 BEGIN {
-   our $VERSION = '1.0';
+   our $VERSION = '1.1';
    our @ISA = qw(Exporter);
 
    require Exporter;

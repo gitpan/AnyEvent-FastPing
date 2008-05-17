@@ -1,5 +1,8 @@
 Revision history for Perl extension AnyEvent::FastPing
 
+1.1   Sat May 17 23:47:05 CEST 2008
+	- try to improve portability here and there.
+
 1.0   Sun Apr 27 17:43:24 CEST 2008
 	- rename from Net::FPing to AnyEvent::FastPing.
 

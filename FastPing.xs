@@ -1,7 +1,12 @@
-#define _POSIX_C_SOURCE 199309
-#define _GNU_SOURCE 1
+#define _POSIX_C_SOURCE 200112
+#define _XOPEN_SOURCE 600
+#define _LARGEFILE64_SOURCE 1
 
-#define IPV6 1 // if you get compilation problems try to disable IPv6
+#ifndef __APPLE__
+# define IPV6 0
+#else
+# define IPV6 1 // if you get compilation problems try to disable IPv6
+#endif
 
 #include "EXTERN.h"
 #include "perl.h"
@@ -360,6 +365,7 @@ boot ()
     croak ("AnyEvent::FastPing: unable to create receive pipe");
 
   icmp4_fd = socket (AF_INET, SOCK_RAW, IPPROTO_ICMP);
+  fcntl (icmp4_fd, F_SETFL, O_NONBLOCK);
 #ifdef ICMP_FILTER
   {
     struct icmp_filter oval;
@@ -370,6 +376,7 @@ boot ()
 
 #if IPV6
   icmp6_fd = socket (AF_INET6, SOCK_RAW, IPPROTO_ICMPV6);
+  fcntl (icmp6_fd, F_SETFL, O_NONBLOCK);
 # ifdef ICMP6_FILTER
   {
     struct icmp6_filter oval;
@@ -550,7 +557,7 @@ _recv_icmp4 (...)
 
         for (;;)
           {
-            int len = recvfrom (icmp4_fd, buf, sizeof (buf), MSG_DONTWAIT | MSG_TRUNC, &sa, &sl);
+            int len = recvfrom (icmp4_fd, buf, sizeof (buf), MSG_TRUNC, (struct sockaddr *)&sa, &sl);
 
             if (len <= HDR_SIZE_IP4)
               break;
@@ -599,7 +606,7 @@ _recv_icmp6 (...)
 
         for (;;)
           {
-            int len = recvfrom (icmp6_fd, &pkt, sizeof (pkt), MSG_DONTWAIT | MSG_TRUNC, &sa, &sl);
+            int len = recvfrom (icmp6_fd, &pkt, sizeof (pkt), MSG_TRUNC, (struct sockaddr *)&sa, &sl);
 
             if (len != sizeof (PKT))
               break;

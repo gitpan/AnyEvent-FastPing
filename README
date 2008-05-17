@@ -5,7 +5,7 @@ SYNOPSIS
      use AnyEvent::FastPing;
 
 DESCRIPTION
-    This module was written for a single purpose only: sending ICMP EHCO
+    This module was written for a single purpose only: sending ICMP ECHO
     REQUEST packets as quickly as possible to a large number of hosts
     (thousands to millions).
 
