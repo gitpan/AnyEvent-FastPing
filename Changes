@@ -1,5 +1,10 @@
 Revision history for Perl extension AnyEvent::FastPing
 
+1.11  Sun May 18 22:09:13 CEST 2008
+	- fix #ifdef APPLE logic. why does apple actively hurt
+          free sofwtare development so much?
+        - restore ipv6 support on non-broken==non-darwin platforms.
+
 1.1   Sat May 17 23:47:05 CEST 2008
 	- try to improve portability here and there.
 

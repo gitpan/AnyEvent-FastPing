@@ -2,7 +2,7 @@
 #define _XOPEN_SOURCE 600
 #define _LARGEFILE64_SOURCE 1
 
-#ifndef __APPLE__
+#ifdef __APPLE__
 # define IPV6 0
 #else
 # define IPV6 1 // if you get compilation problems try to disable IPv6

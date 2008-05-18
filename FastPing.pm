@@ -29,7 +29,7 @@ no warnings;
 use AnyEvent;
 
 BEGIN {
-   our $VERSION = '1.1';
+   our $VERSION = '1.11';
    our @ISA = qw(Exporter);
 
    require Exporter;
