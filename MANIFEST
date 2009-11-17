@@ -11,3 +11,4 @@ bin/fastping
 t/00_load.t
 t/01_ping.t
 META.yml                                 Module meta-data (added by MakeMaker)
+META.json                                Module meta-data (added by MakeMaker)

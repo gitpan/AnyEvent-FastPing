@@ -29,7 +29,7 @@ no warnings;
 use AnyEvent;
 
 BEGIN {
-   our $VERSION = '1.11';
+   our $VERSION = '1.12';
    our @ISA = qw(Exporter);
 
    require Exporter;
@@ -93,7 +93,7 @@ given range. If omitted, defaults to C<$send_interval>.
 
 The C<$send_interval> is the minimum interval between sending any two
 packets and is a way to make an overall rate limit. If omitted, pings will
-be send as fast as possible.
+be sent as fast as possible.
 
 The C<$payload> is a 32 bit unsigned integer given as the ICMP ECHO
 REQUEST ident and sequence numbers (in unspecified order :).
@@ -158,7 +158,7 @@ Register a callback that is called for every received ping reply
 whether the reply is actually a reply to a ping sent earlier).
 
 The code reference gets a single parameter - an arrayref with an
-entry for each received packet (replies are beign batched for greater
+entry for each received packet (replies are being batched for greater
 efficiency). Each packet is represented by an arrayref with three members:
 the source address (an octet string of either 4 (IPv4) or 16 (IPv6) octets
 length), the payload as passed to C<icmp_ping> and the round trip time in
@@ -212,13 +212,13 @@ sub unregister_cb($) {
 
 =head1 AUTHOR
 
- Marc Lehmann <schmorp@schmorp.de>
- http://home.schmorp.de/
+   Marc Lehmann <schmorp@schmorp.de>
+   http://home.schmorp.de/
 
-=head1 AUTHOR
+=head1 LICENSE
 
- This software is distributed under the GENERAL PUBLIC LICENSE, version 2
- or any later version or, at your option, the Artistic License.
+   This software is distributed under the GENERAL PUBLIC LICENSE, version 2
+   or any later version or, at your option, the Artistic License.
 
 =cut
 

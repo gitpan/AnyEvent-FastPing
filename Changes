@@ -1,5 +1,9 @@
 Revision history for Perl extension AnyEvent::FastPing
 
+1.12  Tue Nov 17 22:37:48 CET 2009
+	- enhance portability slightly.
+        - convert to c89.
+
 1.11  Sun May 18 22:09:13 CEST 2008
 	- fix #ifdef APPLE logic. why does apple actively hurt
           free sofwtare development so much?

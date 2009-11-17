@@ -1,11 +1,7 @@
-#define _POSIX_C_SOURCE 200112
-#define _XOPEN_SOURCE 600
-#define _LARGEFILE64_SOURCE 1
-
-#ifdef __APPLE__
-# define IPV6 0
+#if defined(__linux)
+# define ENABLE_IPV6 1 // if you get compilation problems try to disable IPv6
 #else
-# define IPV6 1 // if you get compilation problems try to disable IPv6
+# define ENABLE_IPV6 0
 #endif
 
 #include "EXTERN.h"
@@ -36,7 +32,7 @@
 #ifdef __linux
 # include <linux/icmp.h>
 #endif
-#if IPV6
+#if ENABLE_IPV6
 # include <netinet/icmp6.h>
 #endif
 
@@ -51,14 +47,14 @@
 #define HDR_SIZE_IP4  20
 #define HDR_SIZE_IP6  48
 
-//TODO: xread/xwrite for atomicity? we currently rely on the fact that the pip biffersize divides exactly by pointer sizes
+//TODO: xread/xwrite for atomicity? we currently rely on the fact that the pip buffersize divides exactly by pointer sizes
 
 typedef uint8_t addr_t[16];
 
 typedef double tstamp;
 
-tstamp
-NOW ()
+static tstamp
+NOW (void)
 {
   struct timeval tv;
   gettimeofday (&tv, 0);
@@ -168,7 +164,7 @@ ping_proc (void *unused)
 {
   PKT pkt;
   struct sockaddr_in sa4;
-#if IPV6
+#if ENABLE_IPV6
   struct sockaddr_in6 sa6;
 #endif
 
@@ -177,7 +173,7 @@ ping_proc (void *unused)
   memset (&sa4, 0, sizeof (sa4));
   sa4.sin_family  = AF_INET;
   sa4.sin_port    = 0;
-#if IPV6
+#if ENABLE_IPV6
   memset (&sa6, 0, sizeof (sa6));
   sa6.sin6_family = AF_INET6;
   sa6.sin6_port   = 0;
@@ -187,6 +183,9 @@ ping_proc (void *unused)
     {
       REQ *req;
       int len = read (thr_send [0], &req, sizeof (req));
+
+      tstamp now = NOW ();
+      tstamp next = now;
 
       if (!len)
         pthread_exit (0);
@@ -203,9 +202,6 @@ ping_proc (void *unused)
       pkt.seq     = (uint16_t)~magic;
       pkt.payload = req->payload;
 
-      tstamp now = NOW ();
-      tstamp next = now;
-
       {
         int r;
         for (r = req->nranges; r--; )
@@ -215,6 +211,7 @@ ping_proc (void *unused)
       while (req->nranges)
         {
           RANGE *range = req->ranges;
+          int n, k;
 
           if (!memcmp (&range->lo, &range->hi, sizeof (addr_t)))
             req->ranges [0] = req->ranges [--req->nranges];
@@ -262,7 +259,7 @@ ping_proc (void *unused)
                 }
               else
                 {
-#if IPV6
+#if ENABLE_IPV6
                   pkt.type = ICMP6_ECHO;
 
                   memcpy (&sa6.sin6_addr,
@@ -295,12 +292,11 @@ ping_proc (void *unused)
             }
 
           // make a downheap operation
-          int k = 0;
-          int n = 0;
-          for (;;)
+          for (n = k = 0; ; )
             {
-              ++n;
               int j = k * 2 + 1;
+
+              ++n;
 
               if (j >= req->nranges)
                 break;
@@ -311,9 +307,11 @@ ping_proc (void *unused)
               if (req->ranges [j].next >= req->ranges [k].next)
                 break;
 
-              RANGE temp = req->ranges [k];
-              req->ranges [k] = req->ranges [j];
-              req->ranges [j] = temp;
+              {
+                RANGE temp = req->ranges [k];
+                req->ranges [k] = req->ranges [j];
+                req->ranges [j] = temp;
+              }
 
               k = j;
             }
@@ -328,12 +326,12 @@ ping_proc (void *unused)
 static void
 feed_reply (AV *res_av)
 {
-  if (av_len (res_av) < 0)
-    return;
-
   dSP;
   SV *res = sv_2mortal (newRV_inc ((SV *)res_av));
   int i;
+
+  if (av_len (res_av) < 0)
+    return;
 
   ENTER;
   SAVETMPS;
@@ -374,7 +372,7 @@ boot ()
   }
 #endif
 
-#if IPV6
+#if ENABLE_IPV6
   icmp6_fd = socket (AF_INET6, SOCK_RAW, IPPROTO_ICMPV6);
   fcntl (icmp6_fd, F_SETFL, O_NONBLOCK);
 # ifdef ICMP6_FILTER
@@ -433,14 +431,17 @@ SV *
 _req_icmp_ping (SV *ranges, NV interval, U32 payload, SV *id)
 	CODE:
 {
+  	AV *rav;
+        int nranges, i;
+        REQ *req;
+
   	if (!SvROK (ranges) || SvTYPE (SvRV (ranges)) != SVt_PVAV)
           croak ("address ranges must be given as arrayref with lo, hi pairs");
 
-        AV *rav = (AV *)SvRV (ranges);
-        int nranges = av_len (rav) + 1;
+        rav = (AV *)SvRV (ranges);
+        nranges = av_len (rav) + 1;
 
-        REQ *req = malloc (sizeof (REQ));
-        int i;
+        req = malloc (sizeof (REQ));
 
         if (interval < MIN_INTERVAL)
           interval = MIN_INTERVAL;
@@ -454,15 +455,18 @@ _req_icmp_ping (SV *ranges, NV interval, U32 payload, SV *id)
         while (nranges--)
           {
             SV *sv = *av_fetch (rav, nranges, 1);
+            SV *lo, *hi;
+            AV *av;
+            RANGE *r;
 
             if (!SvROK (sv) || SvTYPE (SvRV (sv)) != SVt_PVAV)
               croak ("address range must be given as arrayref with lo, hi, interval arrayrefs");
 
-            AV *av = (AV *)SvRV (sv);
-            RANGE *r = req->ranges + nranges;
+            av = (AV *)SvRV (sv);
+            r = req->ranges + nranges;
 
-            SV *lo = *av_fetch (av, 0, 1);
-            SV *hi = *av_fetch (av, 1, 1);
+            lo = *av_fetch (av, 0, 1);
+            hi = *av_fetch (av, 1, 1);
 
             sv_utf8_downgrade (lo, 0);
             sv_utf8_downgrade (hi, 0);
@@ -473,7 +477,7 @@ _req_icmp_ping (SV *ranges, NV interval, U32 payload, SV *id)
             if (SvPOKp (lo) && SvPOKp (hi))
               {
                 if (SvCUR (lo) != SvCUR (hi))
-                  croak ("addresses in range must be of the same size (either 4 or 16 bytes)");
+                  croak ("all addresses in range must be of the same size (either 4 or 16 bytes)");
 
                 if (SvCUR (lo) == 4)
                   {
@@ -483,7 +487,7 @@ _req_icmp_ping (SV *ranges, NV interval, U32 payload, SV *id)
                   }
                 else if (SvCUR (lo) == 16)
                   {
-#if IPV6
+#if ENABLE_IPV6
                     r->family = AF_INET6;
                     memcpy (&r->lo, SvPVX (lo), sizeof (addr_t));
                     memcpy (&r->hi, SvPVX (hi), sizeof (addr_t));
@@ -492,13 +496,14 @@ _req_icmp_ping (SV *ranges, NV interval, U32 payload, SV *id)
 #endif
                   }
                 else
-                  croak ("addresses in range must be either 4 (IPv4) or 16 (IPV6) bytes in length");
+                  croak ("addresses in range must be either 4 (IPv4) or 16 (IPv6) bytes in length");
               }
             else if (SvIOK (lo) && SvIOK (hi))
               {
+                uint32_t addr;
+
                 r->family = AF_INET;
 
-                uint32_t addr;
                 addr = htonl (SvUV (lo)); memcpy (sizeof (addr_t) - 4 + (char *)&r->lo, &addr, 4);
                 addr = htonl (SvUV (hi)); memcpy (sizeof (addr_t) - 4 + (char *)&r->hi, &addr, 4);
               }
@@ -557,15 +562,16 @@ _recv_icmp4 (...)
 
         for (;;)
           {
+            IP4HDR *iphdr = (IP4HDR *)buf;
             int len = recvfrom (icmp4_fd, buf, sizeof (buf), MSG_TRUNC, (struct sockaddr *)&sa, &sl);
+            int hdrlen, totlen;
+            PKT *pkt;
 
             if (len <= HDR_SIZE_IP4)
               break;
 
-            IP4HDR *iphdr = (IP4HDR *)buf;
-
-            int hdrlen = (iphdr->version_ihl & 15) * 4;
-            int totlen = ntohs (iphdr->tot_len);
+            hdrlen = (iphdr->version_ihl & 15) * 4;
+            totlen = ntohs (iphdr->tot_len);
 
             // packet corrupt?
             if (!res_av
@@ -574,7 +580,7 @@ _recv_icmp4 (...)
                 || hdrlen < HDR_SIZE_IP4 || hdrlen + sizeof (PKT) != totlen)
               continue;
 
-            PKT *pkt = (PKT *)(buf + hdrlen);
+            pkt = (PKT *)(buf + hdrlen);
 
             if (pkt->type != ICMP4_ECHO_REPLY
                 || pkt->id  != (uint16_t) magic
@@ -582,12 +588,14 @@ _recv_icmp4 (...)
                 || !isnormal (pkt->stamp))
               continue;
 
-            AV *av = newAV ();
-            av_push (av, newSVpvn ((char *)&sa.sin_addr, 4));
-            av_push (av, newSVnv (now - pkt->stamp));
-            av_push (av, newSVuv (pkt->payload));
+            {
+              AV *av = newAV ();
+              av_push (av, newSVpvn ((char *)&sa.sin_addr, 4));
+              av_push (av, newSVnv (now - pkt->stamp));
+              av_push (av, newSVuv (pkt->payload));
 
-            av_push (res_av, newRV_noinc ((SV *)av));
+              av_push (res_av, newRV_noinc ((SV *)av));
+            }
           }
 
         if (res_av)
@@ -618,12 +626,14 @@ _recv_icmp6 (...)
                 || !isnormal (pkt.stamp))
               continue;
 
-            AV *av = newAV ();
-            av_push (av, newSVpvn ((char *)&sa.sin6_addr, 16));
-            av_push (av, newSVnv (now - pkt.stamp));
-            av_push (av, newSVuv (pkt.payload));
+            {
+              AV *av = newAV ();
+              av_push (av, newSVpvn ((char *)&sa.sin6_addr, 16));
+              av_push (av, newSVnv (now - pkt.stamp));
+              av_push (av, newSVuv (pkt.payload));
 
-            av_push (res_av, newRV_noinc ((SV *)av));
+              av_push (res_av, newRV_noinc ((SV *)av));
+            }
           }
 
         if (res_av)

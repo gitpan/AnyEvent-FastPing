@@ -39,7 +39,7 @@ FUNCTIONS
 
         The $send_interval is the minimum interval between sending any two
         packets and is a way to make an overall rate limit. If omitted,
-        pings will be send as fast as possible.
+        pings will be sent as fast as possible.
 
         The $payload is a 32 bit unsigned integer given as the ICMP ECHO
         REQUEST ident and sequence numbers (in unspecified order :).
@@ -95,7 +95,7 @@ FUNCTIONS
         earlier).
 
         The code reference gets a single parameter - an arrayref with an
-        entry for each received packet (replies are beign batched for
+        entry for each received packet (replies are being batched for
         greater efficiency). Each packet is represented by an arrayref with
         three members: the source address (an octet string of either 4
         (IPv4) or 16 (IPv6) octets length), the payload as passed to
@@ -131,10 +131,10 @@ FUNCTIONS
         codereference as to "register_cb").
 
 AUTHOR
-     Marc Lehmann <schmorp@schmorp.de>
-     http://home.schmorp.de/
+       Marc Lehmann <schmorp@schmorp.de>
+       http://home.schmorp.de/
 
-AUTHOR
-     This software is distributed under the GENERAL PUBLIC LICENSE, version 2
-     or any later version or, at your option, the Artistic License.
+LICENSE
+       This software is distributed under the GENERAL PUBLIC LICENSE, version 2
+       or any later version or, at your option, the Artistic License.
 
