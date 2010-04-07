@@ -29,7 +29,7 @@ no warnings;
 use AnyEvent;
 
 BEGIN {
-   our $VERSION = '1.12';
+   our $VERSION = '1.13';
    our @ISA = qw(Exporter);
 
    require Exporter;
@@ -164,6 +164,19 @@ the source address (an octet string of either 4 (IPv4) or 16 (IPv6) octets
 length), the payload as passed to C<icmp_ping> and the round trip time in
 seconds.
 
+Example: register a callback which simply dumps the received data. Since
+the coderef is created on the fly via sub, it would be hard to unregister
+this callback again :)
+
+   AnyEvent::FastPing::register_cb sub {
+      for (@{$_[0]}) {
+         printf "%s %d %g\n",
+            (4 == length $_->[0] ? inet_ntoa $_->[0] : Socket6::inet_ntop (&AF_INET6, $_->[0])),
+            $_->[2],
+            $_->[1];
+      }
+   };
+
 Example: a single ping reply with payload of 1 from C<::1> gets passed
 like this:
 
@@ -198,7 +211,7 @@ as to C<register_cb>).
 
 our @CB;
 
-sub register_cb(&) {
+sub register_cb($) {
    push @CB, $_[0];
 }
 

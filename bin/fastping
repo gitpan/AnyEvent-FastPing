@@ -84,7 +84,7 @@ for (@ARGV) {
    push @ranges, [$lo, $hi, $kbps && $pktsz / ($kbps * 1000)];
 }
 
-AnyEvent::FastPing::register_cb {
+AnyEvent::FastPing::register_cb sub {
    for (@{$_[0]}) {
       printf "%s %d %g\n",
          (4 == length $_->[0] ? inet_ntoa $_->[0] : Socket6::inet_ntop (&AF_INET6, $_->[0])),

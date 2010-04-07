@@ -1,5 +1,8 @@
 Revision history for Perl extension AnyEvent::FastPing
 
+1.13  Wed Apr  7 16:12:38 CEST 2010
+	- fix prototype of register_cb to match documentation.
+
 1.12  Tue Nov 17 22:37:48 CET 2009
 	- enhance portability slightly.
         - convert to c89.
