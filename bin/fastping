@@ -67,8 +67,8 @@ for (@ARGV) {
 
    $hi = $lo unless $hi;
 
-   $lo = AnyEvent::Socket::parse_ipv6 $lo;
-   $hi = AnyEvent::Socket::parse_ipv6 $hi;
+   $lo = AnyEvent::Socket::parse_address $lo;
+   $hi = AnyEvent::Socket::parse_address $hi;
 
    (length $lo) and (length $lo == length $hi)
       or die "ip adress parse error";

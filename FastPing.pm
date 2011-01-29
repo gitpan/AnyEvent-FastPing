@@ -28,7 +28,7 @@ use common::sense;
 use AnyEvent;
 
 BEGIN {
-   our $VERSION = '1.14';
+   our $VERSION = '1.15';
    our @ISA = qw(Exporter);
 
    require Exporter;
@@ -145,10 +145,8 @@ sub icmp_ping($$$&) {
    _send_req _req_icmp_ping @_;
 }
 
-our $ICMP4_FH;
-our $ICMP4_W = (open $ICMP4_FH, "<&=$ICMP4_FD") && AE::io $ICMP4_FH, 0, \&_recv_icmp4;
-our $ICMP6_FH;
-our $ICMP6_W = (open $ICMP6_FH, "<&=$ICMP6_FD") && AE::io $ICMP6_FH, 0, \&_recv_icmp6;
+our $ICMP4_FH; our $ICMP4_W = $ICMP4_FD >= 0 && (open $ICMP4_FH, "<&=$ICMP4_FD") && AE::io $ICMP4_FH, 0, \&_recv_icmp4;
+our $ICMP6_FH; our $ICMP6_W = $ICMP6_FD >= 0 && (open $ICMP6_FH, "<&=$ICMP6_FD") && AE::io $ICMP6_FH, 0, \&_recv_icmp6;
 
 =item AnyEvent::FastPing::register_cb \&cb
 

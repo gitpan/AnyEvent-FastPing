@@ -1,5 +1,9 @@
 Revision history for Perl extension AnyEvent::FastPing
 
+1.15  Sun Jan 30 00:55:10 CET 2011
+	- famous last words: final 1.x API release.
+        - bin/fastping didn't support ipv4 anymore, due to a thinko :/.
+
 1.14  Sun Jan 30 00:36:19 CET 2011
 	- likely last 1.x release.
 	- use common sense.
