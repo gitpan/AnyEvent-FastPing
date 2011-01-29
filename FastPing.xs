@@ -1,4 +1,4 @@
-#if defined(__linux)
+#if defined(__linux) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(__CYGWIN__)
 # define ENABLE_IPV6 1 // if you get compilation problems try to disable IPv6
 #else
 # define ENABLE_IPV6 0
@@ -32,7 +32,7 @@
 #ifdef __linux
 # include <linux/icmp.h>
 #endif
-#if ENABLE_IPV6
+#if ENABLE_IPV6 && !defined (__CYGWIN__)
 # include <netinet/icmp6.h>
 #endif
 
@@ -49,7 +49,7 @@
 
 //TODO: xread/xwrite for atomicity? we currently rely on the fact that the pip buffersize divides exactly by pointer sizes
 
-typedef uint8_t addr_t[16];
+typedef uint8_t addr_tt[16];
 
 typedef double tstamp;
 
@@ -61,14 +61,16 @@ NOW (void)
   return tv.tv_sec + tv.tv_usec * 0.000001;
 }
 
-typedef struct {
+typedef struct
+{
   int family;
-  addr_t lo, hi;
+  addr_tt lo, hi;
   double interval;
   tstamp next;
 } RANGE;
 
-typedef struct {
+typedef struct
+{
   SV *id;
   double interval;
   int nranges;
@@ -76,7 +78,8 @@ typedef struct {
   uint32_t payload;
 } REQ;
 
-typedef struct {
+typedef struct
+{
   uint8_t version_ihl;
   uint8_t tos;
   uint16_t tot_len;
@@ -92,7 +95,8 @@ typedef struct {
   uint32_t dst;
 } IP4HDR;
 
-typedef struct {
+typedef struct
+{
   uint8_t version;
   uint8_t x1, x2, x3;
 
@@ -108,7 +112,8 @@ typedef struct {
 
 static uint16_t magic;
 
-typedef struct {
+typedef struct
+{
   uint8_t type, code;
   uint16_t cksum;
   uint16_t id, seq;
@@ -142,9 +147,9 @@ icmp_cksum (void *data, unsigned int len)
 }
 
 static void
-inc_addr (addr_t *addr)
+inc_addr (addr_tt *addr)
 {
-  int len = sizeof (addr_t) - 1;
+  int len = sizeof (addr_tt) - 1;
 
   do
     {
@@ -191,7 +196,7 @@ ping_proc (void *unused)
         pthread_exit (0);
       else if (len != sizeof (req))
         {
-          perror ("AnyEvent::FastPing: short reead or read error");
+          perror ("AnyEvent::FastPing: short read or read error");
           pthread_exit ((void *)-1);
         }
 
@@ -213,7 +218,7 @@ ping_proc (void *unused)
           RANGE *range = req->ranges;
           int n, k;
 
-          if (!memcmp (&range->lo, &range->hi, sizeof (addr_t)))
+          if (!memcmp (&range->lo, &range->hi, sizeof (addr_tt)))
             req->ranges [0] = req->ranges [--req->nranges];
           else
             {
@@ -251,7 +256,7 @@ ping_proc (void *unused)
                   pkt.cksum = icmp_cksum (&pkt, sizeof (pkt));
 
                   memcpy (&sa4.sin_addr,
-                          sizeof (addr_t) - sizeof (sa4.sin_addr) + (char *)&range->lo,
+                          sizeof (addr_tt) - sizeof (sa4.sin_addr) + (char *)&range->lo,
                           sizeof (sa4.sin_addr));
 
                   if (sendto (icmp4_fd, &pkt, sizeof (pkt), 0, (struct sockaddr *)&sa4, sizeof (sa4)) > 0)
@@ -263,7 +268,7 @@ ping_proc (void *unused)
                   pkt.type = ICMP6_ECHO;
 
                   memcpy (&sa6.sin6_addr,
-                          sizeof (addr_t) - sizeof (sa6.sin6_addr) + (char *)&range->lo,
+                          sizeof (addr_tt) - sizeof (sa6.sin6_addr) + (char *)&range->lo,
                           sizeof (sa6.sin6_addr));
 
                   if (sendto (icmp6_fd, &pkt, sizeof (pkt), 0, (struct sockaddr *)&sa6, sizeof (sa6)) > 0)
@@ -471,8 +476,8 @@ _req_icmp_ping (SV *ranges, NV interval, U32 payload, SV *id)
             sv_utf8_downgrade (lo, 0);
             sv_utf8_downgrade (hi, 0);
 
-            memset (&r->lo, 0, sizeof (addr_t));
-            memset (&r->hi, 0, sizeof (addr_t));
+            memset (&r->lo, 0, sizeof (addr_tt));
+            memset (&r->hi, 0, sizeof (addr_tt));
 
             if (SvPOKp (lo) && SvPOKp (hi))
               {
@@ -482,15 +487,15 @@ _req_icmp_ping (SV *ranges, NV interval, U32 payload, SV *id)
                 if (SvCUR (lo) == 4)
                   {
                     r->family = AF_INET;
-                    memcpy (sizeof (addr_t) - 4 + (char *)&r->lo, SvPVX (lo), 4);
-                    memcpy (sizeof (addr_t) - 4 + (char *)&r->hi, SvPVX (hi), 4);
+                    memcpy (sizeof (addr_tt) - 4 + (char *)&r->lo, SvPVX (lo), 4);
+                    memcpy (sizeof (addr_tt) - 4 + (char *)&r->hi, SvPVX (hi), 4);
                   }
                 else if (SvCUR (lo) == 16)
                   {
 #if ENABLE_IPV6
                     r->family = AF_INET6;
-                    memcpy (&r->lo, SvPVX (lo), sizeof (addr_t));
-                    memcpy (&r->hi, SvPVX (hi), sizeof (addr_t));
+                    memcpy (&r->lo, SvPVX (lo), sizeof (addr_tt));
+                    memcpy (&r->hi, SvPVX (hi), sizeof (addr_tt));
 #else
                     croak ("IPv6 not supported in this configuration");
 #endif
@@ -504,8 +509,8 @@ _req_icmp_ping (SV *ranges, NV interval, U32 payload, SV *id)
 
                 r->family = AF_INET;
 
-                addr = htonl (SvUV (lo)); memcpy (sizeof (addr_t) - 4 + (char *)&r->lo, &addr, 4);
-                addr = htonl (SvUV (hi)); memcpy (sizeof (addr_t) - 4 + (char *)&r->hi, &addr, 4);
+                addr = htonl (SvUV (lo)); memcpy (sizeof (addr_tt) - 4 + (char *)&r->lo, &addr, 4);
+                addr = htonl (SvUV (hi)); memcpy (sizeof (addr_tt) - 4 + (char *)&r->hi, &addr, 4);
               }
             else
               croak ("addresses in range must be strings with either 4 (IPv4) or 16 (IPv6) octets");

@@ -1,9 +1,9 @@
 #!/opt/bin/perl
 
-use Socket;
 use Getopt::Long;
 
 use AnyEvent;
+use AnyEvent::Socket;
 use AnyEvent::FastPing;
 
 use strict;
@@ -44,8 +44,6 @@ EOF
 
 @ARGV or usage 0;
 
-my $ipv6 = eval { require Socket6; 1 };
-
 Getopt::Long::Configure ("bundling", "no_ignore_case");
 
 my $count = 1;
@@ -69,17 +67,15 @@ for (@ARGV) {
 
    $hi = $lo unless $hi;
 
-   if ($lo =~ /:/) {
-      # ipv6
-      $ipv6 or die "Socket6 module missing, no ipv6 support available.\n";
-      $lo = Socket6::inet_pton (&AF_INET6, $lo);
-      $hi = Socket6::inet_pton (&AF_INET6, $hi);
-      $pktsz = AnyEvent::FastPing::icmp6_pktsize;
-   } else {
-      $lo = inet_aton $lo;
-      $hi = inet_aton $hi;
-      $pktsz = AnyEvent::FastPing::icmp4_pktsize;
-   }
+   $lo = AnyEvent::Socket::parse_ipv6 $lo;
+   $hi = AnyEvent::Socket::parse_ipv6 $hi;
+
+   (length $lo) and (length $lo == length $hi)
+      or die "ip adress parse error";
+
+   $pktsz = (4 == length $lo)
+            ? AnyEvent::FastPing::icmp4_pktsize
+            : AnyEvent::FastPing::icmp6_pktsize;
 
    push @ranges, [$lo, $hi, $kbps && $pktsz / ($kbps * 1000)];
 }
@@ -87,7 +83,7 @@ for (@ARGV) {
 AnyEvent::FastPing::register_cb sub {
    for (@{$_[0]}) {
       printf "%s %d %g\n",
-         (4 == length $_->[0] ? inet_ntoa $_->[0] : Socket6::inet_ntop (&AF_INET6, $_->[0])),
+         AnyEvent::Socket::format_address $_->[0],
          $_->[2],
          $_->[1];
    }

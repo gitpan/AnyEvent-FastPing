@@ -23,13 +23,12 @@ you have to run an event model supported by AnyEvent to use this module.
 
 package AnyEvent::FastPing;
 
-use strict;
-no warnings;
+use common::sense;
 
 use AnyEvent;
 
 BEGIN {
-   our $VERSION = '1.13';
+   our $VERSION = '1.14';
    our @ISA = qw(Exporter);
 
    require Exporter;
@@ -45,24 +44,24 @@ our $THR_REQ_FH; open $THR_REQ_FH, ">&=$THR_REQ_FD" or die "FATAL: cannot fdopen
 our $THR_RES_FH; open $THR_RES_FH, "<&=$THR_RES_FD" or die "FATAL: cannot fdopen";
 
 our $THR_REQ_W;
-our $THR_RES_W = AnyEvent->io (fh => $THR_RES_FH, poll => 'r', cb => sub {
+our $THR_RES_W = AE::io $THR_RES_FH, 0, sub {
    my $sv = _read_res
       or return;
 
    $sv->();
-});
+};
 
 our $THR_REQ_BUF;
 
 sub _send_req($) {
    $THR_REQ_BUF .= $_[0];
 
-   $THR_REQ_W ||= AnyEvent->io (fh => $THR_REQ_FH, poll => 'w', cb => sub {
+   $THR_REQ_W ||= AE::io $THR_REQ_FH, 1, sub {
       my $len = syswrite $THR_REQ_FH, $THR_REQ_BUF;
       substr $THR_REQ_BUF, 0, $len, "";
 
       undef $THR_REQ_W unless length $THR_REQ_BUF;
-   });
+   };
 }
 
 =item AnyEvent::FastPing::ipv4_supported
@@ -147,9 +146,9 @@ sub icmp_ping($$$&) {
 }
 
 our $ICMP4_FH;
-our $ICMP4_W = (open $ICMP4_FH, "<&=$ICMP4_FD") && AnyEvent->io (fh => $ICMP4_FH, poll => 'r', cb => \&_recv_icmp4);
+our $ICMP4_W = (open $ICMP4_FH, "<&=$ICMP4_FD") && AE::io $ICMP4_FH, 0, \&_recv_icmp4;
 our $ICMP6_FH;
-our $ICMP6_W = (open $ICMP6_FH, "<&=$ICMP6_FD") && AnyEvent->io (fh => $ICMP6_FH, poll => 'r', cb => \&_recv_icmp6);
+our $ICMP6_W = (open $ICMP6_FH, "<&=$ICMP6_FD") && AE::io $ICMP6_FH, 0, \&_recv_icmp6;
 
 =item AnyEvent::FastPing::register_cb \&cb
 

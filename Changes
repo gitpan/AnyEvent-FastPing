@@ -1,5 +1,16 @@
 Revision history for Perl extension AnyEvent::FastPing
 
+1.14  Sun Jan 30 00:36:19 CET 2011
+	- likely last 1.x release.
+	- use common sense.
+        - convert to AE API.
+        - convert bin/fastping to AnyEvent::Socket, so Socket6 is
+          no longer required.
+        - enable ipv6 on freebsd, netbsd, openbsd, as it seems they
+          got thier header file horrors sorted out.
+        - enable on cygwin, which lacks netinet/icmp6.h, but otherwise
+          might work (untested).
+
 1.13  Wed Apr  7 16:12:38 CEST 2010
 	- fix prototype of register_cb to match documentation.
 
