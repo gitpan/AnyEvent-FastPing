@@ -1,5 +1,18 @@
 Revision history for Perl extension AnyEvent::FastPing
 
+TODO: range interleaving
+
+2.0   Wed Feb  2 21:20:11 CET 2011
+	- use completely different object-oriented API. more complex, but
+          also much more flexible.
+        - support host lists in addition to ranges.
+        - support per-pinger receive callbacks, no more global callback stuff.
+	- no longer embed floating point values in packet, to avoid relying
+          on isnormal.
+        - use slightly faster ipv4 checksumming function.
+        - better cope with high overload conditions by using exponential backoff.
+        - add missing - sigh - common::sense dependency.
+
 1.15  Sun Jan 30 00:55:10 CET 2011
 	- famous last words: final 1.x API release.
         - bin/fastping didn't support ipv4 anymore, due to a thinko :/.

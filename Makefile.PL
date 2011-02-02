@@ -9,7 +9,8 @@ WriteMakefile(
 	            SUFFIX	=> '.gz',
 	           },
     PREREQ_PM      => {
-       AnyEvent => 0,
+       AnyEvent      => 0,
+       common::sense => 3.4,
     },
     NAME           => "AnyEvent::FastPing",
     VERSION_FROM   => "FastPing.pm",

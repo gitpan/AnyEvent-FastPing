@@ -11,12 +11,20 @@ my $done = AnyEvent->condvar;
 
 print "ok 1\n";
 
-AnyEvent::FastPing::icmp_ping
-   [[v127.0.0.1, v127.0.0.255], [v127.0.1.1, v127.0.1.5, 0.05]], 0, 0,
-   sub { print "ok 3\n"; $done->broadcast };
+my $pinger = new AnyEvent::FastPing;
+
+$pinger->max_rtt (0.01);
+$pinger->add_range (v127.0.0.1, v127.0.0.255);
+$pinger->add_range (v127.0.1.1, v127.0.1.005);
+
+$pinger->on_idle (sub {
+   print "ok 3\n";
+   $done->();
+});
 
 print "ok 2\n";
 
+$pinger->start;
 $done->wait;
 
 print "ok 4\n";

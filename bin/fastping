@@ -49,6 +49,7 @@ Getopt::Long::Configure ("bundling", "no_ignore_case");
 my $count = 1;
 my $rate  = 0;
 my $wait  = 0.25;
+my $count = 1;
 my $quiet = 0;
 
 GetOptions (
@@ -80,24 +81,30 @@ for (@ARGV) {
    push @ranges, [$lo, $hi, $kbps && $pktsz / ($kbps * 1000)];
 }
 
-AnyEvent::FastPing::register_cb sub {
-   for (@{$_[0]}) {
-      printf "%s %d %g\n",
-         AnyEvent::Socket::format_address $_->[0],
-         $_->[2],
-         $_->[1];
-   }
-} unless $quiet;
-
-for (1 .. $count) {
-   my $done = AnyEvent->condvar;
-   AnyEvent::FastPing::icmp_ping \@ranges, $rate && 1 / $rate, $_, sub { $done->broadcast };
-   $done->wait;
-}
-
 {
-   my $done = AnyEvent->condvar;
-   my $wait_w = AnyEvent->timer (after => $wait, cb => sub { $done->broadcast });
-   $done->wait;
+   my $pinger = new AnyEvent::FastPing;
+
+   $pinger->interval ($rate && 1 / $rate);
+   $pinger->max_rtt (0);
+
+   $pinger->on_recv (sub {
+      for (@{ $_[0] }) {
+         printf "%s %g\n", AnyEvent::Socket::format_address $_->[0], $_->[1];
+      }
+   }) unless $quiet;
+
+   for my $iter (1 .. $count) {
+      $pinger->add_range (@$_)
+         for @ranges;
+
+      $pinger->on_idle (my $done = AE::cv);
+      $pinger->start;
+      $done->wait;
+   }
+
+   {
+      my $wait_w = AE::timer $wait, 0, my $done = AE::cv;
+      $done->wait;
+   }
 }
 

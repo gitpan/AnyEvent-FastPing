@@ -11,7 +11,7 @@
    },
    "generated_by" : "ExtUtils::MakeMaker::JSONMETA version 7.000",
    "distribution_type" : "module",
-   "version" : "1.15",
+   "version" : "2.0",
    "name" : "AnyEvent-FastPing",
    "author" : [],
    "license" : "unknown",
@@ -19,7 +19,8 @@
       "ExtUtils::MakeMaker" : 0
    },
    "requires" : {
-      "AnyEvent" : 0
+      "AnyEvent" : 0,
+      "common::sense" : 3.4
    },
    "abstract" : null,
    "configure_requires" : {
