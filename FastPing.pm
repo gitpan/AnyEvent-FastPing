@@ -29,7 +29,7 @@ use common::sense;
 use AnyEvent;
 
 BEGIN {
-   our $VERSION = '2.0';
+   our $VERSION = '2.01';
    our @ISA = qw(Exporter);
 
    require Exporter;
@@ -286,9 +286,9 @@ using the C<add_hosts> method.
 
 Similar to C<add_range>, but uses a list of single addresses instead. The
 list is specified as an array reference as first argument. Each entry in
-the array should be a binary host address, either IPv4 or IPv6. Currently,
-all entries in the list must be either IPv4 B<OR> IPv6, so you have to
-create two host ranges if you have mixed addresses.
+the array should be a binary host address, either IPv4 or IPv6. If all
+addresses are IPv4 addresses, then a compact IPv4-only format will be used
+to store the list internally.
 
 Minimum C<$interval> is the same as for C<add_range> and can be left out.
 

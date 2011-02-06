@@ -214,9 +214,8 @@ THE AnyEvent::FastPing CLASS
         Similar to "add_range", but uses a list of single addresses instead.
         The list is specified as an array reference as first argument. Each
         entry in the array should be a binary host address, either IPv4 or
-        IPv6. Currently, all entries in the list must be either IPv4 OR
-        IPv6, so you have to create two host ranges if you have mixed
-        addresses.
+        IPv6. If all addresses are IPv4 addresses, then a compact IPv4-only
+        format will be used to store the list internally.
 
         Minimum $interval is the same as for "add_range" and can be left
         out.

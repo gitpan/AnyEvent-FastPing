@@ -2,6 +2,10 @@ Revision history for Perl extension AnyEvent::FastPing
 
 TODO: range interleaving
 
+2.01  Sun Feb  6 01:23:25 CET 2011
+	- add_hosts now allows mixed ipv4 and ipv6 addresses.
+	- netbsd and solaris lack PTHREAD_STACK_MIN. sigh.
+
 2.0   Wed Feb  2 21:20:11 CET 2011
 	- use completely different object-oriented API. more complex, but
           also much more flexible.

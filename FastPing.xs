@@ -20,6 +20,7 @@
 #include <inttypes.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <limits.h>
 
 #include <sys/types.h>
 #include <sys/time.h>
@@ -239,15 +240,33 @@ range_send_ping (RANGE *self, PKT *pkt)
 {
   // send ping
   uint8_t *addr;
+  int addrlen;
 
   if (self->addrcnt)
     addr = (self->addrcnt - 1) * self->addrlen + (uint8_t *)(self + 1);
   else
     addr = sizeof (addr_tt) - self->addrlen + self->lo;
 
+  addrlen = self->addrlen;
+
+  /* convert ipv4 mapped addresses - this only works for host lists */
+  /* this tries to match 0000:0000:0000:0000:0000:ffff:a.b.c.d */
+  /* efficiently but also with few insns */
+  if (addrlen == 16 && !addr [0] && icmp4_fd >= 0
+      && !(              addr [ 1]
+           | addr [ 2] | addr [ 3]
+           | addr [ 4] | addr [ 5]
+           | addr [ 6] | addr [ 7]
+           | addr [ 8] | addr [ 9]
+           | (255-addr [10]) | (255-addr [11])))
+    {
+      addr += 12;
+      addrlen -= 12;
+    }
+
   pkt->cksum = 0;
 
-  if (self->addrlen == 4)
+  if (addrlen == 4)
     {
       struct sockaddr_in sa;
 
@@ -423,6 +442,11 @@ ping_proc (void *self_)
 }
 
 /*****************************************************************************/
+
+/* NetBSD, Solaris... */
+#ifndef PTHREAD_STACK_MIN
+# define PTHREAD_STACK_MIN 0
+#endif
 
 static void
 pinger_start (PINGER *self)
@@ -844,7 +868,7 @@ add_hosts (PINGER *self, SV *addrs, NV interval = 0, UV interleave = 1)
   	AV *av;
         int i, j, k;
         int cnt;
-        int addrlen;
+        int addrlen = 0;
         RANGE *range;
         NOT_RUNNING;
 
@@ -854,21 +878,22 @@ add_hosts (PINGER *self, SV *addrs, NV interval = 0, UV interleave = 1)
         av = (AV *)SvRV (addrs);
         cnt = av_len (av) + 1;
 
-        if (!cnt)
-          XSRETURN_EMPTY;
-
-        addrlen = SvCUR (*av_fetch (av, 0, 1));
-
-        if (addrlen != 4 && addrlen != 16)
-          croak ("AnyEvent::FastPing::add_hosts addresses must be specified as binary IPv4 or IPv6 addresses");
-
-        for (i = cnt; --i; )
+        for (i = 0; i < cnt; ++i)
           {
             SV *sv = *av_fetch (av, i, 1);
+            sv_utf8_downgrade (sv, 0);
 
-            if (!sv_utf8_downgrade (sv, 1) || addrlen != SvCUR (sv))
-              croak ("AnyEvent::FastPing::add_hosts addresses must all have the same size");
+            j = SvCUR (sv);
+
+            if (j != 4 && j != 16)
+              croak ("AnyEvent::FastPing::add_hosts addresses must be specified as binary IPv4 or IPv6 addresses");
+
+            if (j > addrlen)
+              addrlen = j;
           }
+
+        if (!cnt)
+          XSRETURN_EMPTY;
 
         range = calloc (1, sizeof (RANGE) + cnt * addrlen);
 
@@ -883,9 +908,25 @@ add_hosts (PINGER *self, SV *addrs, NV interval = 0, UV interleave = 1)
         k = cnt;
         for (j = 0; j < interleave; ++j)
           for (i = j; i < cnt; i += interleave)
-            memcpy ((uint8_t *)(range + 1) + --k * addrlen,
-                    SvPVbyte_nolen (*av_fetch (av, i, 1)),
-                    addrlen);
+            {
+              uint8_t *dst = (uint8_t *)(range + 1) + --k * addrlen;
+              char *pv;
+              STRLEN pvlen;
+              SV *sv = *av_fetch (av, i, 1);
+              sv_utf8_downgrade (sv, 0);
+
+              pv = SvPVbyte (sv, pvlen);
+
+              if (pvlen != addrlen)
+                {
+                  dst [ 0] = 0x00; dst [ 1] = 0x00; dst [ 2] = 0x00; dst [ 3] = 0x00;
+                  dst [ 4] = 0x00; dst [ 5] = 0x00; dst [ 6] = 0x00; dst [ 7] = 0x00;
+                  dst [ 8] = 0x00; dst [ 9] = 0x00; dst [10] = 0xff; dst [11] = 0xff;
+                  dst [12] = pv [0]; dst [13] = pv [1]; dst [14] = pv [2]; dst [15] = pv [3];
+                }
+              else
+                memcpy (dst, pv, addrlen);
+            }
 
         pinger_add_range (self, range);
 }
