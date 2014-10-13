@@ -1,6 +1,11 @@
 Revision history for Perl extension AnyEvent::FastPing
 
 TODO: range interleaving
+TODO: rcvbuf/sndbuf, arp cache size
+TODO: /proc/sys/net/ipv4/neigh/default/gc_thresh1
+
+2.02  Mon Oct 13 13:14:40 CEST 2014
+	- fix a bug in the checksumming algorithm.
 
 2.01  Sun Feb  6 01:23:25 CET 2011
 	- add_hosts now allows mixed ipv4 and ipv6 addresses.

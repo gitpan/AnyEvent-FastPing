@@ -199,7 +199,7 @@ pkt_to_ts (PKT *pkt)
 static void
 pkt_cksum (PKT *pkt)
 {
-  uint_fast32_t sum = -pkt->cksum;
+  uint_fast32_t sum = 0;
   uint32_t *wp = (uint32_t *)pkt;
   int len = sizeof (*pkt) / 4;
 
@@ -208,7 +208,7 @@ pkt_cksum (PKT *pkt)
       uint_fast32_t w = *(volatile uint32_t *)wp++;
       sum += (w & 0xffff) + (w >> 16);
     }
-  while (len--);
+  while (--len);
 
   sum = (sum >> 16) + (sum & 0xffff);   /* add high 16 to low 16 */
   sum += sum >> 16;                     /* add carry */
@@ -270,7 +270,7 @@ range_send_ping (RANGE *self, PKT *pkt)
     {
       struct sockaddr_in sa;
 
-      pkt->type  = ICMP4_ECHO;
+      pkt->type = ICMP4_ECHO;
       pkt_cksum (pkt);
 
       sa.sin_family = AF_INET;
